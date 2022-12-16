@@ -1,0 +1,332 @@
+#include <IRremote.h>
+
+int RECV_PIN = 11;
+const char type ='B';
+const boolean PCB = 0;
+boolean displayCode = true;
+
+#include <Servo.h>
+Servo RJservo;  
+const int SERVO_PIN = 8;  
+int angle =90;    
+int angleStep =10;
+const int ANGLE_CENTRE =90;
+// remote settings 
+const String RIGHT=">";
+const String LEFT ="<";
+const String CENTRE ="OK";
+// remote settings end
+
+IRrecv irrecv(RECV_PIN);
+
+// this is array holding codes for White Remote when used with PCB version of receiver
+unsigned int whiteRemotePCB[] ={
+            0xE318261B, // CH-
+            0x511DBB,   // CH
+            0xEE886D7F,  // CH+
+
+            0x52A3D41F, // |<<
+            0xD7E84B1B, // >>|
+            0x20FE4DBB, // >||          
+
+            0xF076C13B, // -
+            0xA3C8EDDB, // +
+            0x12CEA6E6, // EQ
+
+            0xC101E57B, // 0
+            0x97483BFB, // 100+
+            0xF0C41643, // 200+
+
+            0x9716BE3F, // 1
+            0x3D9AE3F7, // 2
+            0x6182021B, // 3           
+
+            0x8C22657B, // 4 
+            0x488F3CBB, // 5
+            0x449E79F,  // 6
+
+            0x32C6FDF7, // 7
+            0x1BC0157B, // 8
+            0x3EC3FC1B  // 9                          
+            };
+
+         
+unsigned int whiteRemote[] ={
+            0xFFA25D, // CH-
+            0xFF629D,   // CH
+            0xFFE21D,  // CH+
+
+            0xFF22DD, // |<<
+            0xFF02FD, // >>|
+            0xFFC23D, // >||          
+
+            0xFFE01F, // -
+            0xFFA857, // +
+            0xFF906F, // EQ
+
+            0xFF6897, // 0
+            0xFF9867, // 100+
+            0xFFB04F, // 200+
+
+            0xFF30CF, // 1
+            0xFF18E7, // 2
+            0xFF7A85, // 3           
+
+            0xFF10EF, // 4 
+            0xFF38C7, // 5
+            0xFF5AA5,  // 6
+
+            0xFF42BD, // 7
+            0xFF4AB5, // 8
+            0xFF52AD  // 9                          
+            };
+
+ String whiteRemoteKey[] ={
+            "CH-",
+            "CH",
+            "CH+",
+
+            "|<<",
+            ">>|",
+            ">||",
+
+            "-",
+            "+",
+            "EQ",
+
+            "0",
+            "100+",
+            "200+",
+
+            "1",
+            "2",
+            "3",
+
+            "4",
+            "5",
+            "6",
+
+            "7",
+            "8",
+            "9"
+            };
+
+
+ unsigned int blackRemote[] ={
+            0xFF629D, // ^
+            0xFF22DD,   // <
+            0xFF02FD,  // OK
+            0xFFC23D, // >
+            0xFFA857, // v
+
+            0xFF6897, // 1
+            0xFF9867, // 2
+            0xF0C41643, // 3           
+
+            0xFF30CF, // 4 
+            0xFF18E7, // 5
+            0xFF7A85,  // 6
+
+            0xFF10EF, // 7
+            0xFF38C7, // 8
+            0xFF5AA5,  // 9 
+
+            0xFF42BD, // *
+            0xFF4AB5, // 0
+            0xFF52AD  // #                                      
+            };
+
+
+ unsigned int blackRemotePCB[] ={
+            0x511DBB, // ^
+            0x52A3D41F,   // <
+            0xD7E84B1B,  // OK
+            0x20FE4DBB, // >
+            0xA3C8EDDB, // v
+
+
+            0xC101E57B, // 1
+            0x97483BFB, // 2
+            0xF0C41643, // 3           
+
+            0x9716BE3F, // 4 
+            0x3D9AE3F7, // 5
+            0x6182021B,  // 6
+
+            0x8C22657B, // 7
+            0x488F3CBB, // 8
+            0x449E79F,  // 9 
+
+            0x32C6FDF7, // *
+            0x1BC0157B, // 0
+            0x3EC3FC1B  // #                                      
+            };
+
+
+ String blackRemoteKey[] ={
+            "^",
+            "<",
+            "OK",
+            ">",
+            "v",
+
+            "1",
+            "2",
+            "3",
+
+            "4",
+            "5",
+            "6",
+
+            "7",
+            "8",
+            "9",
+            
+            "*",
+            "0",
+            "#"
+            };
+
+decode_results results;
+
+
+void setup()
+{
+  Serial.begin(9600);
+
+  Serial.println("Robojax IR Decode");
+  Serial.println("Servo Control with Remote");
+  irrecv.enableIRIn(); 
+
+   RJservo.attach(SERVO_PIN);
+
+}
+
+void loop() {
+
+  if (irrecv.decode(&results)) {
+    if(displayCode)Serial.println(results.value, HEX);
+    robojaxValidateCode(results.value);
+    irrecv.resume(); 
+  }
+  delay(50);
+}
+
+
+void robojaxValidateCode(int cd)
+{
+
+  
+  int found=0;
+
+ if(type =='W' && !PCB)
+ {
+   
+      for(int i=0; i< sizeof(whiteRemote)/sizeof(int); i++)
+      {
+        if(whiteRemote[i] ==cd)
+        {
+          
+          Serial.print("Key pressed:");
+          Serial.println(whiteRemoteKey[i]);
+          servoAction(whiteRemoteKey[i]);
+          found=1;
+        }
+      }
+ }else if(type =='W' && PCB){
+    
+      for(int i=0; i< sizeof(whiteRemotePCB)/sizeof(int); i++)
+      {
+        if(whiteRemotePCB[i] ==cd)
+        {
+          
+          Serial.print("Key pressed:");
+          Serial.println(whiteRemoteKey[i]);
+          servoAction(whiteRemoteKey[i]);
+          found=1;
+        }
+      } 
+ }else if(type =='B' && PCB){
+    
+       for(int i=0; i< sizeof(blackRemotePCB)/sizeof(int); i++)
+      {
+        
+        if(blackRemotePCB[i] ==cd)
+        {
+
+          Serial.print("Key pressed:");
+          Serial.println(blackRemoteKey[i]);
+         servoAction(blackRemoteKey[i]);// take action     
+          found=1;
+        }
+      }
+ }else{
+
+      
+       for(int i=0; i< sizeof(blackRemote)/sizeof(int); i++)
+      {
+        
+        if(blackRemote[i] ==cd)
+        {
+
+          Serial.print("Key pressed:");
+          Serial.println(blackRemoteKey[i]);
+          servoAction(blackRemoteKey[i]);// take action          
+    
+          found=1;
+        }
+      } 
+ }
+  if(!found){
+    if(cd !=0xFFFFFFFF)
+      {
+    Serial.println("Key unkown");
+      }
+  }// found
+}// robojaxValidateCode end
+
+
+void servoAction(String value)
+{
+  
+  while(value == RIGHT){
+
+    if (angle > 0 && angle <= 180) {
+      angle = angle - angleStep;
+       if(angle < 0){
+        angle = 0;
+       }else{
+      RJservo.write(angle); 
+      Serial.print("Moved to: ");
+      Serial.print(angle);   
+      Serial.println(" degree");
+       }
+    }
+    value =".";
+    delay(100);
+  }
+  while(value == LEFT){
+
+    
+    if (angle >= 0 && angle <= 180) {
+      angle = angle + angleStep;
+      if(angle >180){
+        angle =180;
+       }else{
+      RJservo.write(angle); 
+      Serial.print("Moved to: ");
+      Serial.print(angle);   
+      Serial.println(" degree");
+       }
+    }
+    value =".";
+    delay(100);
+  }// while for LEFT
+
+  if(value == CENTRE)
+  {
+    angle = ANGLE_CENTRE;
+    RJservo.write(angle); 
+  }
+    
+}
